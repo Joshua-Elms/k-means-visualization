@@ -256,17 +256,11 @@ def make_gif(path_in, iters):
 def set_params(k=2, half_of_points=20, dims=2, means=(5, 15), stdevs=(1, 1), image_folder_path="", data_path=""): 
     """
     Determine the parameters of the algorithm
-
-    Args:
-        None
-
-    Returns: 
-        k: int, determines # of centroids that will be chosen (final # of clusters)
     """
-    means = (5, 15)
-    stdevs = (2, 2)
-    half_of_points = 30
-    k = 3
+    means = (5, 15) # where the centers of the gaussian clusters will be
+    stdevs = (2, 2) # the respective standard deviations of each gaussian cluster
+    half_of_points = 30 # due to oddities in how this is written, double this to know the final # of points in visualization
+    k = 3 # desired num of clusters, only functional from 1 =< k <= 8 currently
     image_folder_path = "/Users/joshuaelms/Desktop/github_repos/k-means-visualization/k-means-visualization/images"
     data_path = "http://cs.joensuu.fi/sipu/datasets/unbalance.txt"
     delim = None
