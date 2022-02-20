@@ -4,22 +4,7 @@ import seaborn as sns
 import pandas as pd
 from math import dist
 import imageio
-
-def set_params(k=2, half_of_points=20, dims=2, means=(5, 15), stdevs=(1, 1)): 
-    """
-    Determine the parameters of the algorithm
-
-    Args:
-        None
-
-    Returns: 
-        k: int, determines # of centroids that will be chosen (final # of clusters)
-    """
-    means = (5, 15)
-    stdevs = (2, 4)
-    half_of_points = 3
-    k=2
-    return k, half_of_points, dims, means, stdevs
+import warnings
 
 
 def generate_data(k, half_of_points, dims, distr_means, stdevs):
@@ -83,7 +68,7 @@ def build_df(matrix, rm_means, dims, k_num):
 
     # Initialize df containing only generated points for clustering
     df1 = pd.DataFrame(matrix)
-    col_names = list(f"Dim_{i+1}" for i in range(dims))
+    col_names = ("X", "Y")
     df1.columns = col_names # set names for all of our points dimensions
     df1["Type"] = "data" # Type will be either data or centroid
     df1["Cluster"] = "None" # Cluster will be one of the centroids (k1, k2, ...)
@@ -100,6 +85,27 @@ def build_df(matrix, rm_means, dims, k_num):
     df.index += 1
 
     return df
+
+
+def parse_data(path, k_num): 
+    """
+    Generates dataframe using user data at a given path instead of random data
+
+    Args:
+        path: str path to 2 dimensional dataset
+        k_num: number of clusters to group into
+
+    Returns: 
+        data: row major matrix of data
+        d_means: randomly selected points from inside data ranges
+    """
+    data = np.genfromtxt(path, delimiter=' ')
+    columns = [data[:, i] for i in range(2)] # get list of all columns
+    dim_ranges = [(column.min(), column.max()) for column in columns] # get min and max of each column into tuple
+    rng = np.random.default_rng()
+    d_means = [rng.uniform(*dim_range, size=k_num).tolist() for dim_range in dim_ranges] # create dim sized, randomly selected points to represent centroids
+
+    return data, d_means
 
 
 def Assignment(df_in, k_num):
@@ -124,7 +130,7 @@ def Assignment(df_in, k_num):
     for i in range(k_num): # Calculate distance between some k and some point for each k and point
         df_point_dists[i]["Dist"] = 0
         for index, row in df_point_dists[i].iterrows():
-            df_point_dists[i].iloc[index-1, 4] = dist((row["Dim_1"], row["Dim_2"]), (centroids.iloc[i]["Dim_1"], centroids.iloc[i]["Dim_2"]))
+            df_point_dists[i].iloc[index-1, 4] = dist((row["X"], row["Y"]), (centroids.iloc[i]["X"], centroids.iloc[i]["Y"]))
 
     df_out = df_in.copy(deep=True) # create output df
 
@@ -146,22 +152,22 @@ def Update(df, k_num):
     Returns: 
         df
     """
-    l1 = list(df[df["Type"] == "centroid"]["Dim_1"])
-    l2 = list(df[df["Type"] == "centroid"]["Dim_2"])
+    l1 = list(df[df["Type"] == "centroid"]["X"])
+    l2 = list(df[df["Type"] == "centroid"]["Y"])
 
     k_origs = get_column_major(((l1), (l2)))
 
-    Dim_1_mean = [df.iloc[1:-k_num][df["Cluster"] == f"C{i+1}"]["Dim_1"].mean() for i in range(k_num)]
-    Dim_2_mean = [df.iloc[1:-k_num][df["Cluster"] == f"C{i+1}"]["Dim_2"].mean() for i in range(k_num)]
+    X_mean = [df.iloc[1:-k_num][df["Cluster"] == f"C{i+1}"]["X"].mean() for i in range(k_num)]
+    Y_mean = [df.iloc[1:-k_num][df["Cluster"] == f"C{i+1}"]["Y"].mean() for i in range(k_num)]
 
     seq = tuple(range(-1, -k_num-1, -1))
 
     for i in range(k_num): # (i - 1)
-        df.iloc[seq[i], 0] = Dim_1_mean[seq[i]]
-        df.iloc[seq[i], 1] = Dim_2_mean[seq[i]]
+        df.iloc[seq[i], 0] = X_mean[seq[i]]
+        df.iloc[seq[i], 1] = Y_mean[seq[i]]
 
-    l3 = list(df[df["Type"] == "centroid"]["Dim_1"])
-    l4 = list(df[df["Type"] == "centroid"]["Dim_2"])
+    l3 = list(df[df["Type"] == "centroid"]["X"])
+    l4 = list(df[df["Type"] == "centroid"]["Y"])
 
     k_modded = get_column_major(((l3), (l4)))
      
@@ -175,41 +181,40 @@ def generate_graph(df, save_path, step, k_num, plines=None, plabels=None):
     Generate plot of all points and centroids
 
     Args: 
-        df: data to be graphed, must have "Dim_1", "Dim_2", "Cluster", and "Type" attrs
+        df: data to be graphed, must have "X", "Y", "Cluster", and "Type" attrs
         save_path: relative / absolute path to folder where plot should be saved
         step: which iteration of the algorithm you are on 
     """ 
 
-    all_color_lst = ["#FF0000", "#0000FF", "#00FF00", "#D030C9", "#D09D30"]
-    all_color_dict = {"None":"#000000", "C1":"#FF0000", "C2":"#0000FF", "C3":"#00FF00", "C4":"#D030C9", "C5":"#D09D30"}
-
-    color_dict = {f"C{i+1}":str(all_color_lst[i]) for i in range(k_num)}
-    color_dict["None"] = "#000000"
-    color_lst = all_color_lst[:k_num+1]
+    all_color_dict = {
+    "None":"#000000", "C1":"#FF0000", "C2":"#0000FF",
+    "C3":"#00FF00", "C4":"#D030C9", "C5":"#D09D30", 
+    "C6":"#8a4ead", "C7":"#8ab5a4", "C8":"#4a0909"
+    }
 
     if step > 0:
 
         sns.set_theme()
-        sp = sns.scatterplot(data=df, x="Dim_1", y="Dim_2", hue="Cluster", palette=all_color_dict, style="Type", size="Type", sizes=[25,80]).set(title=f"K-Means Algorithm: Step {step}")
+        sp = sns.scatterplot(data=df, x="X", y="Y", hue="Cluster", palette=all_color_dict, style="Type", size="Type", sizes=[25,80]).set(title=f"K-Means Algorithm: Step {step}")
         plt.legend([],[], frameon=False)
         sp[0].figure.legend(plines, plabels, bbox_to_anchor=(0.915, 0.88), loc='upper left', borderaxespad=0)
+        plt.ylabel("Y", rotation=0)
+
         plt.savefig(f"{save_path}/kmeans_step{step}.jpeg", bbox_inches='tight')
         plt.clf()
         pass 
 
     else:
         sns.set_theme()
-        sp = sns.scatterplot(data=df, x="Dim_1", y="Dim_2", hue="Cluster", palette=all_color_dict, style="Type", size="Type", sizes=[25,80]).set(title=f"K-Means Algorithm: Step {step}")
+        sp = sns.scatterplot(data=df, x="X", y="Y", hue="Cluster", palette=all_color_dict, style="Type", size="Type", sizes=[25,80]).set(title=f"K-Means Algorithm: Step {step}")
         plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0)
+        plt.ylabel("Y", rotation=0)
         plt.savefig(f"{save_path}/kmeans_step{step}.jpeg", bbox_inches='tight')
         
         lines_labels = [ax.get_legend_handles_labels() for ax in sp[0].figure.axes]
         lines, labels = [sum(lol, []) for lol in zip(*lines_labels)]
         plt.clf()
         return lines, labels
-
-        
-        
 
 
 def controller(df, k_num, path):
@@ -225,6 +230,7 @@ def controller(df, k_num, path):
         changing = False if change < 0.1 else True
         step += 1
         generate_graph(df, path, step, k_num, lines, labels)
+        print(f"Iteration {step} complete")
 
     return step
 
@@ -246,25 +252,35 @@ def make_gif(path_in, iters):
 
     pass
 
-def main():
-    path = "/Users/joshuaelms/Desktop/github_repos/CSCI-B365/Miscellaneous/jpgs"
-    k_num, half_of_points, dims, distr_means, stdevs = set_params()
-    init_matrix, init_means = generate_data(k_num, half_of_points, dims, distr_means, stdevs)
-    df = build_df(init_matrix, init_means, dims, k_num)
-    iters = controller(df, k_num, path)
-    make_gif(path, iters)
 
-def classwork():
-    path = "/Users/joshuaelms/Desktop/github_repos/CSCI-B365/Miscellaneous/jpgs"
-    k_num, half_of_points, dims, distr_means, stdevs = set_params()
-    data = np.asarray([[4, 5], [2, 4], [1, 3], [3, 3], [6, 2], [8, 3], [7, 1]])
-    dim_ranges = [(column.min(), column.max()) for column in data] # get min and max of each column into tuple
-    rng = np.random.default_rng()
-    d_means1 = [rng.uniform(*dim_range, size=k_num).tolist() for dim_range in dim_ranges] # create dim sized, randomly selected points to represent centroids
-    d_means2 = [[1, 7, 4], [3, 1, 5]]
-    df = build_df(data, d_means1, dims, k_num)
-    iters = controller(df, k_num, path)
-    make_gif(path, iters)
+def set_params(k=2, half_of_points=20, dims=2, means=(5, 15), stdevs=(1, 1), image_folder_path="", data_path=""): 
+    """
+    Determine the parameters of the algorithm
+
+    Args:
+        None
+
+    Returns: 
+        k: int, determines # of centroids that will be chosen (final # of clusters)
+    """
+    means = (5, 15)
+    stdevs = (2, 2)
+    half_of_points = 30
+    k = 3
+    image_folder_path = "/Users/joshuaelms/Desktop/github_repos/k-means-visualization/k-means-visualization/images"
+    data_path = "http://cs.joensuu.fi/sipu/datasets/unbalance.txt"
+    return k, half_of_points, dims, means, stdevs, image_folder_path, data_path
+
+
+def main():
+    warnings.filterwarnings("ignore")
+    k_num, half_of_points, dims, distr_means, stdevs, image_folder_path, data_path = set_params()
+    data, means = parse_data(data_path, k_num) if data_path else generate_data(k_num, half_of_points, dims, distr_means, stdevs)
+    df = build_df(data, means, dims, k_num)
+    iters = controller(df, k_num, image_folder_path)
+    make_gif(image_folder_path, iters)
+    print("Visualization complete")
+
 
 if __name__ == "__main__": 
     main()

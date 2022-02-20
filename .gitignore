@@ -127,3 +127,10 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+images/.DS_Store
+images/kmeans_step0.jpeg
+images/kmeans_step1.jpeg
+images/kmeans_step2.jpeg
+images/kmeans_step3.jpeg
+images/kmeans_step4.jpeg
+images/movie.gif
