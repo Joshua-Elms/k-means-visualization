@@ -87,7 +87,7 @@ def build_df(matrix, rm_means, dims, k_num):
     return df
 
 
-def parse_data(path, k_num): 
+def parse_data(path, k_num, delim=","): 
     """
     Generates dataframe using user data at a given path instead of random data
 
@@ -99,7 +99,7 @@ def parse_data(path, k_num):
         data: row major matrix of data
         d_means: randomly selected points from inside data ranges
     """
-    data = np.genfromtxt(path, delimiter=' ')
+    data = np.genfromtxt(path, delimiter=delim)
     columns = [data[:, i] for i in range(2)] # get list of all columns
     dim_ranges = [(column.min(), column.max()) for column in columns] # get min and max of each column into tuple
     rng = np.random.default_rng()
@@ -269,13 +269,14 @@ def set_params(k=2, half_of_points=20, dims=2, means=(5, 15), stdevs=(1, 1), ima
     k = 3
     image_folder_path = "/Users/joshuaelms/Desktop/github_repos/k-means-visualization/k-means-visualization/images"
     data_path = "http://cs.joensuu.fi/sipu/datasets/unbalance.txt"
-    return k, half_of_points, dims, means, stdevs, image_folder_path, data_path
+    delim = None
+    return k, half_of_points, dims, means, stdevs, image_folder_path, data_path, delim
 
 
 def main():
     warnings.filterwarnings("ignore")
-    k_num, half_of_points, dims, distr_means, stdevs, image_folder_path, data_path = set_params()
-    data, means = parse_data(data_path, k_num) if data_path else generate_data(k_num, half_of_points, dims, distr_means, stdevs)
+    k_num, half_of_points, dims, distr_means, stdevs, image_folder_path, data_path, delim = set_params()
+    data, means = parse_data(data_path, k_num, delim) if data_path else generate_data(k_num, half_of_points, dims, distr_means, stdevs)
     df = build_df(data, means, dims, k_num)
     iters = controller(df, k_num, image_folder_path)
     make_gif(image_folder_path, iters)
