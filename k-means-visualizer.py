@@ -257,12 +257,12 @@ def set_params(k=2, half_of_points=20, dims=2, means=(5, 15), stdevs=(1, 1), ima
     """
     Determine the parameters of the algorithm
     """
-    means = (5, 15) # where the centers of the gaussian clusters will be
-    stdevs = (2, 2) # the respective standard deviations of each gaussian cluster
-    half_of_points = 30 # due to oddities in how this is written, double this to know the final # of points in visualization
+    means = (5, 10) # where the centers of the gaussian clusters will be
+    stdevs = (2, 4) # the respective standard deviations of each gaussian cluster
+    half_of_points = 50 # due to oddities in how this is written, double this to know the final # of points in visualization
     k = 3 # desired num of clusters, only functional from 1 =< k <= 8 currently
     image_folder_path = "/Users/joshuaelms/Desktop/github_repos/k-means-visualization/k-means-visualization/images"
-    data_path = "http://cs.joensuu.fi/sipu/datasets/unbalance.txt"
+    # data_path = "http://cs.joensuu.fi/sipu/datasets/unbalance.txt"
     delim = None
     return k, half_of_points, dims, means, stdevs, image_folder_path, data_path, delim
 
